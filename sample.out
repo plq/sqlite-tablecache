@@ -1,0 +1,16 @@
+conn: "140723105789424" ready
+conn: "140723105789424" qstr: "CREATE TEMP TRIGGER cars_notify_change_140723105789424_i AFTER INSERT ON cars FOR EACH ROW BEGIN select cars_notify_change_140723105789424(); END"
+conn: "140723105789424" qstr: "CREATE TEMP TRIGGER cars_notify_change_140723105789424_u AFTER UPDATE ON cars FOR EACH ROW BEGIN select cars_notify_change_140723105789424(); END"
+conn: "140723105789424" qstr: "CREATE TEMP TRIGGER cars_notify_change_140723105789424_d AFTER DELETE ON cars FOR EACH ROW BEGIN select cars_notify_change_140723105789424(); END"
+conn: "140723105789472" ready
+conn: "140723105789472" qstr: "CREATE TEMP TRIGGER cars_notify_change_140723105789472_i AFTER INSERT ON cars FOR EACH ROW BEGIN select cars_notify_change_140723105789472(); END"
+conn: "140723105789472" qstr: "CREATE TEMP TRIGGER cars_notify_change_140723105789472_u AFTER UPDATE ON cars FOR EACH ROW BEGIN select cars_notify_change_140723105789472(); END"
+conn: "140723105789472" qstr: "CREATE TEMP TRIGGER cars_notify_change_140723105789472_d AFTER DELETE ON cars FOR EACH ROW BEGIN select cars_notify_change_140723105789472(); END"
+conn: "140723105789520" ready
+conn: "140723105789520" qstr: "CREATE TEMP TRIGGER cars_notify_change_140723105789520_i AFTER INSERT ON cars FOR EACH ROW BEGIN select cars_notify_change_140723105789520(); END"
+conn: "140723105789520" qstr: "CREATE TEMP TRIGGER cars_notify_change_140723105789520_u AFTER UPDATE ON cars FOR EACH ROW BEGIN select cars_notify_change_140723105789520(); END"
+conn: "140723105789520" qstr: "CREATE TEMP TRIGGER cars_notify_change_140723105789520_d AFTER DELETE ON cars FOR EACH ROW BEGIN select cars_notify_change_140723105789520(); END"
+create table cars ok
+cache2 invalidate()
+cache0 invalidate()
+cache1 invalidate()

@@ -31,7 +31,6 @@ int main() {
             ",owner text not null"
         ")"
     );
-    dbs0.register_cache<CarCache>("cache0");
 
     DbScope dbs1("cars.db");
     dbs1.register_cache<CarCache>("cache1");

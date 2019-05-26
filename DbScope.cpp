@@ -20,13 +20,18 @@ Q_DECLARE_OPAQUE_POINTER(sqlite3 *)
 Q_DECLARE_METATYPE(sqlite3 *)
 
 CacheStore DbScope::s_table_caches;
-
+std::recursive_mutex DbScope::s_mutex;
+ConnectionStore DbScope::s_connections;
 
 static void table_change_callback(sqlite3_context *ctx, int, sqlite3_value **) {
     auto ptr = sqlite3_user_data(ctx);
     auto caches = reinterpret_cast<CacheStore *>(ptr);
-    for (auto &cache: *caches) {
-        cache->invalidate();
+
+    {
+        std::lock_guard<std::recursive_mutex> guard(DbScope::get_mutex());
+        for (auto &cache: *caches) {
+            cache->invalidate();
+        }
     }
 }
 
@@ -42,10 +47,21 @@ DbScope::DbScope(const QString &dbname) {
         qFatal("Unable to open db: %s", m_db->lastError().databaseText().toUtf8().constData());
     }
 
+    {
+        std::lock_guard<std::recursive_mutex> guard(s_mutex);
+        s_connections.insert(this);
+    }
+
     qDebug() << "conn:" << conn_name << "ready";
 }
 
 bool DbScope::register_table_change_callback(TableCache *cache) {
+    const auto &table_name = cache->get_table_name();
+    auto func_name = QStringLiteral("%1_notify_change").arg(table_name);
+    if (m_triggered_tables.contains(func_name)) {
+        return true;
+    }
+
     auto &db = *m_db;
 
     auto h = db.driver()->handle();
@@ -54,11 +70,8 @@ bool DbScope::register_table_change_callback(TableCache *cache) {
         return 0;
     }
 
-    const auto &table_name = cache->get_table_name();
 
     sqlite3* sqlite_handle = h.value<sqlite3 *>();
-    auto func_name = QStringLiteral("%1_notify_change_%2")
-                                            .arg(table_name).arg(reinterpret_cast<uintptr_t>(this));
     auto func_name_bytes = func_name.toUtf8();
     const auto num_args = 0;
     const auto func_props = SQLITE_UTF8;
@@ -107,12 +120,12 @@ bool DbScope::register_table_change_callback(TableCache *cache) {
 
         if(! q.prepare(qstr)) {
             qFatal("Unable to prepare trigger."
-                   "\nconn: %s"
-                   "\nqstr: %s"
-                   "\nqErr: %s",
-                   db.connectionName().toUtf8().constData(),
-                   qstr.toUtf8().constData(),
-                   q.lastError().databaseText().toUtf8().constData());
+                       "\n\tconn: %s"
+                       "\n\tqstr: %s"
+                       "\n\tqErr: %s",
+                       db.connectionName().toUtf8().constData(),
+                       qstr.toUtf8().constData(),
+                       q.lastError().databaseText().toUtf8().constData());
         }
 
         if (! q.exec()) {
@@ -126,5 +139,11 @@ bool DbScope::register_table_change_callback(TableCache *cache) {
         }
     }
 
+    m_triggered_tables.insert(func_name);
+
     return reinterpret_cast<quintptr>(sqlite_handle);
+}
+
+std::recursive_mutex &DbScope::get_mutex() {
+    return s_mutex;
 }

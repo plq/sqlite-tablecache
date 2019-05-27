@@ -1,11 +1,11 @@
 
-#include "DbScope.h"
+#include "DbScopeCached.h"
 #include "TableCache.h"
 #include "CarCache.h"
 
 #include <QDebug>
 
-QSqlQuery qexec(DbScope &dbs, const char *qstr) {
+QSqlQuery qexec(DbScopeCached &dbs, const char *qstr) {
     QSqlQuery q(dbs.get_db());
 
     if (! q.prepare(qstr)) {
@@ -21,7 +21,7 @@ QSqlQuery qexec(DbScope &dbs, const char *qstr) {
 
 
 int main() {
-    DbScope dbs0("cars.db");
+    DbScopeCached dbs0("cars.db");
 
     qexec(dbs0, "drop table if exists cars");
     qexec(dbs0,
@@ -32,10 +32,10 @@ int main() {
         ")"
     );
 
-    DbScope dbs1("cars.db");
+    DbScopeCached dbs1("cars.db");
     dbs1.register_cache<CarCache>("cache1");
 
-    DbScope dbs2("cars.db");
+    DbScopeCached dbs2("cars.db");
     dbs2.register_cache<CarCache>("cache2");
 
     qDebug() << "create table cars ok";

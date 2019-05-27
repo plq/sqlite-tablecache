@@ -1,7 +1,7 @@
 #include "CarCache.h"
 
 
-CarCache::CarCache(DbScope &dbs, const char *cache_name)
+CarCache::CarCache(DbScopeCached &dbs, const char *cache_name)
     : TableCache(dbs, "cars"), m_cache(10000), m_cache_name(cache_name) {
 
 }

@@ -1,5 +1,5 @@
 
-#include "DbScope.h"
+#include "DbScopeCached.h"
 
 #include <inttypes.h>
 
@@ -19,23 +19,23 @@ Q_DECLARE_OPAQUE_POINTER(sqlite3 *)
 
 Q_DECLARE_METATYPE(sqlite3 *)
 
-CacheStore DbScope::s_table_caches;
-std::recursive_mutex DbScope::s_mutex;
-ConnectionStore DbScope::s_connections;
+CacheStore DbScopeCached::s_table_caches;
+std::recursive_mutex DbScopeCached::s_mutex;
+ConnectionStore DbScopeCached::s_connections;
 
 static void table_change_callback(sqlite3_context *ctx, int, sqlite3_value **) {
     auto ptr = sqlite3_user_data(ctx);
     auto caches = reinterpret_cast<CacheStore *>(ptr);
 
     {
-        std::lock_guard<std::recursive_mutex> guard(DbScope::get_mutex());
+        std::lock_guard<std::recursive_mutex> guard(DbScopeCached::get_mutex());
         for (auto &cache: *caches) {
             cache->invalidate();
         }
     }
 }
 
-DbScope::DbScope(const QString &dbname) {
+DbScopeCached::DbScopeCached(const QString &dbname) {
     auto conn_name = QString::number(reinterpret_cast<uintptr_t>(this));
 
     m_db = std::make_unique<QSqlDatabase>(QSqlDatabase::addDatabase("QSQLITE", conn_name));
@@ -55,7 +55,7 @@ DbScope::DbScope(const QString &dbname) {
     qDebug() << "conn:" << conn_name << "ready";
 }
 
-bool DbScope::register_table_change_callback(TableCache *cache) {
+bool DbScopeCached::register_table_change_callback(TableCache *cache) {
     const auto &table_name = cache->get_table_name();
     auto func_name = QStringLiteral("%1_notify_change").arg(table_name);
     if (m_triggered_tables.contains(func_name)) {
@@ -144,6 +144,21 @@ bool DbScope::register_table_change_callback(TableCache *cache) {
     return reinterpret_cast<quintptr>(sqlite_handle);
 }
 
-std::recursive_mutex &DbScope::get_mutex() {
+DbScopeCached::~DbScopeCached() {
+    m_db->close();
+    {
+        std::lock_guard<std::recursive_mutex> guard(s_mutex);
+
+        for (const auto &cache: m_own_caches) {
+            s_table_caches.erase(cache.get());
+        }
+
+        s_connections.erase(this);
+    }
+
+    QSqlDatabase::removeDatabase(m_db->connectionName());
+}
+
+std::recursive_mutex &DbScopeCached::get_mutex() {
     return s_mutex;
 }

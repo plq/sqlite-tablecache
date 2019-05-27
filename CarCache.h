@@ -10,7 +10,7 @@
 
 class CarCache : public TableCache {
 public:
-    CarCache(DbScope &dbs, const char *cache_name);
+    CarCache(DbScopeCached &dbs, const char *cache_name);
 
     QString get_owner(QString license_plate);
     virtual void invalidate() override;

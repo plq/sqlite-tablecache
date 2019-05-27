@@ -3,11 +3,11 @@
 
 #include <QSqlDatabase>
 
-#include "DbScope.h"
+#include "DbScopeCached.h"
 
 class TableCache {
 public:
-    TableCache(DbScope &dbs, const QString &table_name)
+    TableCache(DbScopeCached &dbs, const QString &table_name)
             : m_dbs(dbs), m_table_name(table_name) {
 
     }
@@ -23,7 +23,7 @@ public:
     }
 
 protected:
-    DbScope &m_dbs;
+    DbScopeCached &m_dbs;
     const QString m_table_name;
 
 };

@@ -1,6 +1,5 @@
-
-#ifndef DBSCOPE_H
-#define DBSCOPE_H
+#ifndef CACHEDDBSCOPE_H
+#define CACHEDDBSCOPE_H
 
 #include <mutex>
 #include <vector>
@@ -13,15 +12,22 @@
 #include <QSqlDatabase>
 
 class TableCache;
-class DbScope;
+class DbScopeCached;
 using CacheStore = std::unordered_set<TableCache *>;
-using ConnectionStore = std::unordered_set<DbScope *>;
-class DbScope {
+using ConnectionStore = std::unordered_set<DbScopeCached *>;
+class DbScopeCached {
 public:
-    explicit DbScope(const QString &dbname);
+    explicit DbScopeCached(const QString &dbname);
+    ~DbScopeCached();
+
+    bool register_table_change_callback(TableCache *);
 
     bool is_ready() const {
         return m_is_ready;
+    }
+
+    QSqlDatabase &get_db() {
+        return *m_db;
     }
 
     template <typename T>
@@ -43,26 +49,6 @@ public:
 
         return static_cast<T*>(retval);
     }
-
-    bool register_table_change_callback(TableCache *);
-
-    ~DbScope() {
-        m_db->close();
-        {
-            std::lock_guard<std::recursive_mutex> guard(s_mutex);
-
-            for (const auto &cache: m_own_caches) {
-                s_table_caches.erase(cache.get());
-            }
-
-            s_connections.erase(this);
-        }
-    }
-
-    QSqlDatabase &get_db() {
-        return *m_db;
-    }
-
 
     static std::recursive_mutex &get_mutex();
 
